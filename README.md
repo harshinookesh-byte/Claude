@@ -51,3 +51,14 @@ flutter test
 ```
 
 Built and tested with Flutter 3.27 (Dart 3.6).
+
+## Build the Android APK
+
+```bash
+flutter build apk --release
+# -> build/app/outputs/flutter-apk/app-release.apk
+```
+
+The Android build uses Gradle 8.10.2, AGP 8.7.3 and Kotlin 2.1.0, so it works with JDK 17 or 21.
+The release APK is signed with the debug key (fine for sideloading). Set up your own
+signing key before publishing to Google Play.
