@@ -400,6 +400,26 @@ Rect thumbnailFocus(Slot slot) => switch (slot) {
       Slot.glasses => const Rect.fromLTRB(116, 72, 184, 118),
     };
 
+/// The slot's zoomed-in region of the model, letterboxed so nothing outside
+/// that region shows.
+class _Thumbnail extends StatelessWidget {
+  const _Thumbnail({required this.look, required this.slot});
+
+  final Look look;
+  final Slot slot;
+
+  @override
+  Widget build(BuildContext context) {
+    final focus = thumbnailFocus(slot);
+    return Center(
+      child: AspectRatio(
+        aspectRatio: focus.width / focus.height,
+        child: CustomPaint(painter: ModelPainter(look, focus: focus)),
+      ),
+    );
+  }
+}
+
 class _ItemTile extends StatelessWidget {
   const _ItemTile({
     required this.item,
@@ -441,11 +461,7 @@ class _ItemTile extends StatelessWidget {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(4),
-                      child: CustomPaint(
-                        size: Size.infinite,
-                        painter: ModelPainter(preview,
-                            focus: thumbnailFocus(item.slot)),
-                      ),
+                      child: _Thumbnail(look: preview, slot: item.slot),
                     ),
                   ),
                   Padding(
@@ -646,13 +662,8 @@ class _UnlockDialog extends StatelessWidget {
         children: [
           SizedBox(
             height: 140,
-            child: CustomPaint(
-              size: Size.infinite,
-              painter: ModelPainter(
-                Look(items: {item.slot: item.id}),
-                focus: thumbnailFocus(item.slot),
-              ),
-            ),
+            child: _Thumbnail(
+                look: Look(items: {item.slot: item.id}), slot: item.slot),
           ),
           const SizedBox(height: 12),
           Row(

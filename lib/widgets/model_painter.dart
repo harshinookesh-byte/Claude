@@ -26,6 +26,9 @@ class ModelPainter extends CustomPainter {
     final scale =
         math.min(size.width / focus.width, size.height / focus.height);
     canvas.save();
+    // Thumbnails zoom into part of the full drawing; without this clip the
+    // rest of the model spills over neighbouring widgets.
+    canvas.clipRect(Offset.zero & size);
     canvas.translate(
       (size.width - focus.width * scale) / 2 - focus.left * scale,
       (size.height - focus.height * scale) / 2 - focus.top * scale,

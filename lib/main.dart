@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,6 +25,11 @@ class FashionStarApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Fashion Star',
         debugShowCheckedModeBanner: false,
+        // Let the horizontal item trays scroll with a mouse/trackpad drag too
+        // (web and desktop); touch already works.
+        scrollBehavior: const MaterialScrollBehavior().copyWith(
+          dragDevices: PointerDeviceKind.values.toSet(),
+        ),
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color(0xFFFF4FA3),
