@@ -10,8 +10,6 @@ class Challenge {
     required this.title,
     required this.brief,
     required this.tags,
-    required this.gradient,
-    required this.icon,
     required this.unlockLevel,
     this.boldMakeup = false,
   });
@@ -22,8 +20,6 @@ class Challenge {
 
   /// The judges reward items carrying any of these tags.
   final Set<String> tags;
-  final List<Color> gradient;
-  final IconData icon;
   final int unlockLevel;
 
   /// Whether the judges expect full glam makeup.
@@ -38,17 +34,13 @@ const challenges = <Challenge>[
     title: 'Street Style',
     brief: 'Comfy, cool and camera-ready for a day in the city.',
     tags: {Tags.casual, Tags.sporty},
-    gradient: [Color(0xFF42A5F5), Color(0xFF80DEEA)],
-    icon: Icons.location_city,
     unlockLevel: 1,
   ),
   Challenge(
     id: 'mehendi',
     title: 'Mehendi Night',
-    brief: 'Bright festive colours, flowers in the hair and lots of bangles!',
+    brief: 'Bright festive colours, flowers in the hair and stacks of bangles.',
     tags: {Tags.indian, Tags.festive},
-    gradient: [Color(0xFF66BB6A), Color(0xFFFFEE58)],
-    icon: Icons.local_florist,
     unlockLevel: 1,
   ),
   Challenge(
@@ -56,8 +48,6 @@ const challenges = <Challenge>[
     title: 'Beach Holiday',
     brief: 'Sun, sand and breezy looks for a seaside escape.',
     tags: {Tags.beach, Tags.casual},
-    gradient: [Color(0xFF26C6DA), Color(0xFFFFE082)],
-    icon: Icons.beach_access,
     unlockLevel: 2,
   ),
   Challenge(
@@ -65,17 +55,13 @@ const challenges = <Challenge>[
     title: 'Boss Lady',
     brief: 'Polished and powerful for a big day at the office.',
     tags: {Tags.office},
-    gradient: [Color(0xFF78909C), Color(0xFFCFD8DC)],
-    icon: Icons.work_outline,
     unlockLevel: 2,
   ),
   Challenge(
     id: 'diwali',
     title: 'Diwali Festival',
-    brief: 'Shine like a diya! Rich silks, gold jewellery and festive glam.',
+    brief: 'Rich silks, gold jewellery and festive glam, bright as a diya.',
     tags: {Tags.indian, Tags.festive, Tags.party},
-    gradient: [Color(0xFFFF7043), Color(0xFFFFCA28)],
-    icon: Icons.light_mode,
     unlockLevel: 3,
     boldMakeup: true,
   ),
@@ -84,28 +70,23 @@ const challenges = <Challenge>[
     title: 'Glitter Party',
     brief: 'Sparkle all night on the dance floor.',
     tags: {Tags.party},
-    gradient: [Color(0xFFAB47BC), Color(0xFFEC407A)],
-    icon: Icons.nightlife,
     unlockLevel: 3,
     boldMakeup: true,
   ),
   Challenge(
     id: 'wedding',
     title: 'Royal Indian Wedding',
-    brief: 'Dress the bride! Lehenga or saree, kundan, tikka and nath.',
+    brief: 'Dress the bride: lehenga or saree, kundan, tikka and nath.',
     tags: {Tags.indian, Tags.wedding},
-    gradient: [Color(0xFFC62828), Color(0xFFFFB300)],
-    icon: Icons.favorite,
     unlockLevel: 4,
     boldMakeup: true,
   ),
   Challenge(
     id: 'redcarpet',
     title: 'Red Carpet Gala',
-    brief: 'All eyes on you - flawless gowns and Hollywood glamour.',
+    brief:
+        'Floor-length gowns and old Hollywood glamour, with every camera on you.',
     tags: {Tags.redCarpet},
-    gradient: [Color(0xFF880E4F), Color(0xFFE53935)],
-    icon: Icons.star,
     unlockLevel: 5,
     boldMakeup: true,
   ),
@@ -114,8 +95,6 @@ const challenges = <Challenge>[
     title: 'Princess Ball',
     brief: 'A fairytale evening at the palace.',
     tags: {Tags.princess},
-    gradient: [Color(0xFF7E57C2), Color(0xFF90CAF9)],
-    icon: Icons.castle,
     unlockLevel: 6,
   ),
 ];

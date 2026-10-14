@@ -46,8 +46,9 @@ void main() {
           game.saveToGallery(GameState.defaultLook);
         }
         await tester.pumpWidget(FashionStarApp(state: game, ads: ads()));
+        await tester.pumpAndSettle();
 
-        _expectClear(tester, find.text('Free Coins'), screen, 'Home tiles');
+        _expectClear(tester, find.text('Free coins'), screen, 'Home tiles');
         _expectClear(tester, find.text('Fashion Star'), screen, 'Home title');
         if (find.byType(Placeholder).evaluate().isNotEmpty) {
           _expectClear(tester, find.byType(Placeholder), screen, 'Banner');
@@ -55,7 +56,10 @@ void main() {
 
         await tester.tap(find.text('Gallery'));
         await tester.pumpAndSettle();
-        await tester.drag(find.byType(GridView), const Offset(0, -3000));
+        await tester.scrollUntilVisible(find.text('Look #1'), 300,
+            scrollable: find.descendant(
+                of: find.byKey(const Key('lookbook')),
+                matching: find.byType(Scrollable)));
         await tester.pumpAndSettle();
         _expectClear(tester, find.text('Look #1'), screen, 'Last gallery card');
         Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
@@ -63,13 +67,13 @@ void main() {
 
         await tester.tap(find.text('Studio'));
         await tester.pumpAndSettle();
-        _expectClear(tester, find.text('SAVE LOOK'), screen, 'Studio button');
+        _expectClear(tester, find.text('Save look'), screen, 'Studio button');
         Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('FASHION SHOW'));
+        await tester.tap(find.text('Start a show'));
         await tester.pumpAndSettle();
-        await tester.drag(find.byType(ListView), const Offset(0, -3000));
+        await tester.scrollUntilVisible(find.text('Princess Ball'), 300);
         await tester.pumpAndSettle();
         _expectClear(tester, find.text('Princess Ball'), screen, 'Last show');
       });
@@ -79,11 +83,11 @@ void main() {
         final screen = await _setUpPhone(tester);
         await tester
             .pumpWidget(FashionStarApp(state: GameState(null), ads: ads()));
-        await tester.tap(find.text('FASHION SHOW'));
+        await tester.tap(find.text('Start a show'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Street Style'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('WALK THE RUNWAY'));
+        await tester.tap(find.text('Walk the runway'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
         await tester.tap(find.text('Tap to skip'));
@@ -92,7 +96,7 @@ void main() {
         await tester.tap(find.text('Tap to skip'));
         await tester.pump();
         await tester.pump(const Duration(seconds: 3));
-        _expectClear(tester, find.text('CONTINUE'), screen, 'Continue');
+        _expectClear(tester, find.text('Continue'), screen, 'Continue');
       });
     });
   }

@@ -6,10 +6,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'ads/ad_service.dart';
 import 'screens/home_screen.dart';
 import 'state/game_state.dart';
+import 'theme/tokens.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  // Draw edge to edge; screens keep their content inside the safe area.
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    statusBarBrightness: Brightness.dark,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.light,
+  ));
   final prefs = await SharedPreferences.getInstance();
   final ads = adsSupported ? AdMobService() : NoAdService();
   runApp(FashionStarApp(state: GameState(prefs), ads: ads));
@@ -37,13 +47,7 @@ class FashionStarApp extends StatelessWidget {
           scrollBehavior: const MaterialScrollBehavior().copyWith(
             dragDevices: PointerDeviceKind.values.toSet(),
           ),
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFFFF4FA3),
-              primary: const Color(0xFFE0388E),
-            ),
-            useMaterial3: true,
-          ),
+          theme: buildTheme(),
           home: const HomeScreen(),
         ),
       ),

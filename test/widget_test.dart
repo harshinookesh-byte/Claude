@@ -41,9 +41,10 @@ void main() {
     final game = GameState(null);
     final ads = FakeAds();
     await tester.pumpWidget(FashionStarApp(state: game, ads: ads));
+    await tester.pumpAndSettle();
     expect(find.text('Fashion Star'), findsOneWidget);
 
-    await tester.tap(find.text('FASHION SHOW'));
+    await tester.tap(find.text('Start a show'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Street Style'));
     await tester.pumpAndSettle();
@@ -55,7 +56,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Lips'));
     await tester.pump();
-    await tester.tap(find.text('Dress Up'));
+    await tester.tap(find.text('Dress up'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Shoes'), 100,
         scrollable: _list('categories'));
@@ -64,7 +65,7 @@ void main() {
     await tester.tap(find.text('Shoes'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('WALK THE RUNWAY'));
+    await tester.tap(find.text('Walk the runway'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     // Skip both runway walks, then wait for the judges.
@@ -76,20 +77,20 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     await tester.pump(const Duration(seconds: 3));
 
-    expect(find.text('CONTINUE'), findsOneWidget);
+    expect(find.text('Continue'), findsOneWidget);
     expect(game.shows, 1);
-    await tester.tap(find.text('Save Look'));
+    await tester.tap(find.text('Save this look'));
     await tester.pump();
     expect(game.gallery, hasLength(1));
 
     final before = game.coins;
-    await tester.tap(find.text('Watch ad to double coins'));
+    await tester.tap(find.text('Double them with an ad'));
     await tester.pump();
     expect(ads.rewardedShown, 1);
     expect(game.coins, greaterThan(before));
-    expect(find.text('Watch ad to double coins'), findsNothing);
+    expect(find.text('Double them with an ad'), findsNothing);
 
-    await tester.tap(find.text('CONTINUE'));
+    await tester.tap(find.text('Continue'));
     await tester.pump();
     await tester.pumpAndSettle();
     expect(ads.showsFinished, 1);
@@ -104,6 +105,7 @@ void main() {
     final game = GameState(null);
     final ads = FakeAds();
     await tester.pumpWidget(FashionStarApp(state: game, ads: ads));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Studio'));
     await tester.pumpAndSettle();
 
@@ -117,14 +119,37 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text(saree.name));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Unlock'));
+    await tester.tap(find.textContaining('Unlock for'));
     await tester.pumpAndSettle();
     expect(game.owns(saree), isTrue);
     expect(game.current[saree.slot], saree.id);
 
-    await tester.tap(find.text('SAVE LOOK'));
+    await tester.tap(find.text('Save look'));
     await tester.pump();
     expect(game.gallery, hasLength(1));
+  });
+
+  testWidgets('studio draws the model at full size', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 2.75;
+    addTearDown(tester.view.reset);
+
+    await tester
+        .pumpWidget(FashionStarApp(state: GameState(null), ads: NoAdService()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Studio'));
+    await tester.pumpAndSettle();
+    final model = find.byWidgetPredicate((w) =>
+        w is CustomPaint &&
+        w.painter is ModelPainter &&
+        (w.painter! as ModelPainter).focus == ModelPainter.fullBody);
+    expect(model, findsOneWidget);
+    expect(tester.getSize(model).height, greaterThan(250));
+
+    // Still full size after changing the outfit (the crossfade path).
+    await tester.tap(find.byTooltip('Surprise me'));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(model.last).height, greaterThan(250));
   });
 
   testWidgets('rewarded ad on home grants coins', (tester) async {
@@ -135,13 +160,14 @@ void main() {
     final game = GameState(null);
     final ads = FakeAds();
     await tester.pumpWidget(FashionStarApp(state: game, ads: ads));
-    await tester.tap(find.text('Free Coins'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Free coins'));
     await tester.pump();
     expect(game.coins, 500 + GameState.adCoins);
 
     // Skipping the video gives nothing.
     ads.earns = false;
-    await tester.tap(find.text('Free Coins'));
+    await tester.tap(find.text('Free coins'));
     await tester.pump();
     expect(game.coins, 500 + GameState.adCoins);
   });
@@ -154,6 +180,7 @@ void main() {
     final game = GameState(null);
     final ads = FakeAds();
     await tester.pumpWidget(FashionStarApp(state: game, ads: ads));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Studio'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Dresses'));
@@ -165,7 +192,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text(saree.name));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Watch ad to unlock free'));
+    await tester.tap(find.text('Watch an ad to unlock'));
     await tester.pumpAndSettle();
     expect(game.owns(saree), isTrue);
     expect(game.coins, 500);
@@ -175,7 +202,8 @@ void main() {
   testWidgets('no ad buttons when no rewarded ad is loaded', (tester) async {
     final game = GameState(null);
     await tester.pumpWidget(FashionStarApp(state: game, ads: NoAdService()));
-    await tester.tap(find.text('Free Coins'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Free coins'));
     await tester.pump();
     expect(game.coins, 500);
   });

@@ -9,6 +9,7 @@ import '../models/fashion_item.dart';
 import '../models/look.dart';
 import '../state/game_state.dart';
 import '../widgets/common.dart';
+import '../theme/tokens.dart';
 import '../widgets/model_painter.dart';
 import 'runway_screen.dart';
 
@@ -24,17 +25,16 @@ class StudioScreen extends StatefulWidget {
 }
 
 enum _MakeupTab {
-  skin('Skin', Icons.face),
-  hairColor('Hair Color', Icons.palette),
-  eyes('Eyes', Icons.remove_red_eye),
-  shadow('Eyeshadow', Icons.gradient),
-  liner('Liner', Icons.edit),
-  lips('Lips', Icons.favorite),
-  blush('Blush', Icons.blur_on);
+  skin('Skin'),
+  hairColor('Hair color'),
+  eyes('Eyes'),
+  shadow('Eyeshadow'),
+  liner('Liner'),
+  lips('Lips'),
+  blush('Blush');
 
-  const _MakeupTab(this.label, this.icon);
+  const _MakeupTab(this.label);
   final String label;
-  final IconData icon;
 }
 
 const _dressSlots = [
@@ -100,8 +100,8 @@ class _StudioScreenState extends State<StudioScreen> {
         }
         game.unlockFree(item);
       } else if (!game.buy(item)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Not enough coins - win a show!')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Not enough coins yet. Win a show to earn more.')));
         return;
       }
     }
@@ -135,14 +135,14 @@ class _StudioScreenState extends State<StudioScreen> {
     final challenge = widget.challenge;
     if (challenge == null) {
       GameScope.read(context).saveToGallery(_look);
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Look saved to your gallery!')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Saved to your looks')));
       return;
     }
     if (!_look.hasOutfit) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text(
-              'Your model needs an outfit: a dress, or a top and bottom!')));
+              'Your model needs an outfit first: a dress, or a top and a bottom.')));
       return;
     }
     Navigator.of(context).pushReplacement(MaterialPageRoute(
@@ -154,153 +154,108 @@ class _StudioScreenState extends State<StudioScreen> {
   Widget build(BuildContext context) {
     final challenge = widget.challenge;
     return Scaffold(
-      body: StudioBackground(
-        colors: challenge == null
-            ? null
-            : [challenge.gradient.first.withAlpha(90), const Color(0xFFFFF0F7)],
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              _topBar(challenge),
-              Expanded(
-                child: Stack(
-                  children: [
-                    Center(child: ModelView(look: _look)),
-                    Positioned(
-                      right: 12,
-                      top: 8,
-                      child: Column(
-                        children: [
-                          _RoundAction(
-                              icon: Icons.undo,
-                              tooltip: 'Undo',
-                              onTap: _history.isEmpty ? null : _undo),
-                          _RoundAction(
-                              icon: Icons.casino,
-                              tooltip: 'Surprise me',
-                              onTap: _randomize),
-                          _RoundAction(
-                              icon: Icons.restart_alt,
-                              tooltip: 'Reset',
-                              onTap: () => _apply(GameState.defaultLook)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TopBar(title: challenge?.title ?? 'Studio'),
+            if (challenge != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(kMargin, 0, kMargin, 4),
+                child: Text(challenge.brief, style: Txt.small()),
               ),
-              _panel(),
-            ],
-          ),
+            Expanded(
+              child: Stack(
+                children: [
+                  // The model holds her place while the outfit changes.
+                  Positioned.fill(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Center(
+                          child: ModelView(look: _look, crossfade: true)),
+                    ),
+                  ),
+                  Positioned(
+                    right: kMargin,
+                    top: 8,
+                    child: Column(
+                      children: [
+                        ToolButton(
+                            icon: Icons.undo,
+                            tooltip: 'Undo',
+                            onTap: _history.isEmpty ? null : _undo),
+                        const SizedBox(height: 8),
+                        ToolButton(
+                            icon: Icons.shuffle,
+                            tooltip: 'Surprise me',
+                            onTap: _randomize),
+                        const SizedBox(height: 8),
+                        ToolButton(
+                            icon: Icons.restart_alt,
+                            tooltip: 'Reset',
+                            onTap: () => _apply(GameState.defaultLook)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _panel(),
+          ],
         ),
       ),
     );
   }
 
-  Widget _topBar(Challenge? challenge) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 4, 12, 0),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new),
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-          Expanded(
-            child: challenge == null
-                ? const Text('Style Studio',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900))
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(challenge.title,
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w900)),
-                      Text(challenge.brief,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12)),
-                    ],
-                  ),
-          ),
-          const CoinChip(),
-        ],
-      ),
-    );
-  }
-
   Widget _panel() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [BoxShadow(color: Color(0x22000000), blurRadius: 12)],
-      ),
+    return ColoredBox(
+      color: Palette.surface,
       child: SafeArea(
         top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(
-                      value: true,
-                      label: Text('Makeup'),
-                      icon: Icon(Icons.brush)),
-                  ButtonSegment(
-                      value: false,
-                      label: Text('Dress Up'),
-                      icon: Icon(Icons.checkroom)),
-                ],
-                selected: {_makeupMode},
-                onSelectionChanged: (s) =>
-                    setState(() => _makeupMode = s.first),
+              padding: const EdgeInsets.fromLTRB(kMargin, 12, kMargin, 4),
+              child: TextTabs<bool>(
+                values: const [true, false],
+                selected: _makeupMode,
+                label: (v) => v ? 'Makeup' : 'Dress up',
+                onSelect: (v) => setState(() => _makeupMode = v),
               ),
             ),
             SizedBox(
               key: const Key('categories'),
               height: 44,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                children: _makeupMode
-                    ? [
-                        for (final t in _MakeupTab.values)
-                          _CategoryChip(
-                            label: t.label,
-                            icon: t.icon,
-                            selected: t == _makeupTab,
-                            onTap: () => setState(() => _makeupTab = t),
-                          ),
-                      ]
-                    : [
-                        for (final s in _dressSlots)
-                          _CategoryChip(
-                            label: s.label,
-                            icon: s.icon,
-                            selected: s == _slot,
-                            dot: _look[s] != null,
-                            onTap: () => setState(() => _slot = s),
-                          ),
-                      ],
-              ),
+              child: _makeupMode
+                  ? TextTabs<_MakeupTab>(
+                      scrollable: true,
+                      values: _MakeupTab.values,
+                      selected: _makeupTab,
+                      label: (t) => t.label,
+                      onSelect: (t) => setState(() => _makeupTab = t),
+                    )
+                  : TextTabs<Slot>(
+                      scrollable: true,
+                      values: _dressSlots,
+                      selected: _slot,
+                      label: (s) => s.label,
+                      marked: (s) => _look[s] != null,
+                      onSelect: (s) => setState(() => _slot = s),
+                    ),
             ),
             SizedBox(
               key: const Key('tray'),
-              height: 118,
+              height: 148,
               child: _makeupMode ? _makeupTray() : _itemTray(),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-              child: GradientButton(
+              padding: const EdgeInsets.fromLTRB(kMargin, 4, kMargin, 12),
+              child: PrimaryButton(
                 label:
-                    widget.challenge == null ? 'SAVE LOOK' : 'WALK THE RUNWAY',
-                icon: widget.challenge == null
-                    ? Icons.bookmark_add
-                    : Icons.auto_awesome,
+                    widget.challenge == null ? 'Save look' : 'Walk the runway',
                 onPressed: _finish,
               ),
             ),
@@ -316,7 +271,7 @@ class _StudioScreenState extends State<StudioScreen> {
     return ListView(
       key: PageStorageKey(_slot),
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: kMargin - 4, vertical: 8),
       children: [
         _NoneTile(
           selected: _look[_slot] == null,
@@ -343,7 +298,8 @@ class _StudioScreenState extends State<StudioScreen> {
         {bool allowNone = true}) {
       return ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+        padding:
+            const EdgeInsets.symmetric(horizontal: kMargin - 6, vertical: 30),
         children: [
           if (allowNone)
             _Swatch(
@@ -372,22 +328,23 @@ class _StudioScreenState extends State<StudioScreen> {
           (c) => set(m.copyWith(lipstick: () => c))),
       _MakeupTab.blush =>
         swatches(blushColors, m.blush, (c) => set(m.copyWith(blush: () => c))),
-      _MakeupTab.liner => ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.all(16),
-          children: [
-            FilterChip(
-              label: const Text('Winged eyeliner'),
-              selected: m.eyeliner,
-              onSelected: (v) => set(m.copyWith(eyeliner: v)),
-            ),
-            const SizedBox(width: 12),
-            FilterChip(
-              label: const Text('Lashes'),
-              selected: m.lashes,
-              onSelected: (v) => set(m.copyWith(lashes: v)),
-            ),
-          ],
+      _MakeupTab.liner => Padding(
+          padding: const EdgeInsets.fromLTRB(kMargin, 28, kMargin, 28),
+          child: Row(
+            children: [
+              _Toggle(
+                label: 'Winged liner',
+                on: m.eyeliner,
+                onTap: () => set(m.copyWith(eyeliner: !m.eyeliner)),
+              ),
+              const SizedBox(width: 12),
+              _Toggle(
+                label: 'Lashes',
+                on: m.lashes,
+                onTap: () => set(m.copyWith(lashes: !m.lashes)),
+              ),
+            ],
+          ),
         ),
     };
   }
@@ -448,70 +405,51 @@ class _ItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final preview = Look(makeup: makeup, items: {item.slot: item.id});
+    final fg = selected ? Palette.accentInk : Palette.ink;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          width: 84,
-          decoration: BoxDecoration(
-            color: selected ? const Color(0xFFFFE4F2) : const Color(0xFFF7F2FB),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: selected ? const Color(0xFFFF4FA3) : Colors.transparent,
-              width: 2.5,
-            ),
-          ),
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: _Thumbnail(look: preview, slot: item.slot),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
-                    child: Text(
-                      item.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 10, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-              if (!owned)
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(150),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.lock, size: 10, color: Colors.white),
-                        const SizedBox(width: 2),
-                        Text('${item.price}',
-                            style: const TextStyle(
-                                color: Color(0xFFFFE082),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800)),
-                      ],
-                    ),
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: owned ? item.name : '${item.name}, ${item.price} coins',
+        child: Pressable(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            width: 100,
+            color: selected ? Palette.accent : Palette.raised,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: _Thumbnail(look: preview, slot: item.slot),
                   ),
                 ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Txt.small(fg).copyWith(height: 1.2),
+                      ),
+                      if (!owned)
+                        Text(
+                          '${item.price} coins',
+                          style: Txt.small(
+                                  selected ? Palette.accentInk : Palette.muted)
+                              .copyWith(height: 1.2, fontFeatures: Txt.tabular),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -529,26 +467,28 @@ class _NoneTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Container(
-          width: 64,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF7F2FB),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: selected ? const Color(0xFFFF4FA3) : Colors.transparent,
-              width: 2.5,
-            ),
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: 'None',
+        child: Pressable(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            width: 72,
+            alignment: Alignment.center,
+            color: selected ? Palette.accent : Palette.raised,
+            child: Text('None',
+                style: Txt.small(selected ? Palette.accentInk : Palette.ink)),
           ),
-          child: const Icon(Icons.block, color: Colors.black38),
         ),
       ),
     );
   }
 }
 
+/// A makeup colour. Round, because it is the colour itself; the chosen one
+/// sits inside an accent ring.
 class _Swatch extends StatelessWidget {
   const _Swatch(
       {required this.color, required this.selected, required this.onTap});
@@ -561,95 +501,59 @@ class _Swatch extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color ?? const Color(0xFFF2F2F2),
-            border: Border.all(
-              color: selected ? const Color(0xFFFF4FA3) : Colors.white,
-              width: selected ? 4 : 2,
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: color == null ? 'None' : 'Colour',
+        child: Pressable(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            width: 64,
+            height: 64,
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: selected ? Palette.accent : Colors.transparent,
             ),
-            boxShadow: const [
-              BoxShadow(color: Color(0x33000000), blurRadius: 4)
-            ],
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color ?? Palette.raised,
+              ),
+              child: color == null
+                  ? Center(child: Text('None', style: Txt.small(Palette.ink)))
+                  : null,
+            ),
           ),
-          child: color == null
-              ? const Icon(Icons.block, color: Colors.black38)
-              : null,
         ),
       ),
     );
   }
 }
 
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-    this.dot = false,
-  });
+class _Toggle extends StatelessWidget {
+  const _Toggle({required this.label, required this.on, required this.onTap});
 
   final String label;
-  final IconData icon;
-  final bool selected;
-  final bool dot;
+  final bool on;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
-      child: ChoiceChip(
-        avatar: Badge(
-          isLabelVisible: dot,
-          smallSize: 7,
-          backgroundColor: const Color(0xFFFF4FA3),
-          child: Icon(icon, size: 16),
-        ),
-        label: Text(label),
-        selected: selected,
-        showCheckmark: false,
-        onSelected: (_) => onTap(),
-        visualDensity: VisualDensity.compact,
-      ),
-    );
-  }
-}
-
-class _RoundAction extends StatelessWidget {
-  const _RoundAction({required this.icon, required this.tooltip, this.onTap});
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Tooltip(
-        message: tooltip,
-        child: Material(
-          shape: const CircleBorder(),
-          color: Colors.white,
-          elevation: 3,
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Icon(icon,
-                  color:
-                      onTap == null ? Colors.black26 : const Color(0xFF9C4DCC)),
-            ),
-          ),
+    return Semantics(
+      toggled: on,
+      button: true,
+      child: Pressable(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          alignment: Alignment.center,
+          color: on ? Palette.accent : Palette.raised,
+          child: Text(label,
+              style: Txt.body(on ? Palette.accentInk : Palette.ink)),
         ),
       ),
     );
@@ -668,54 +572,52 @@ class _UnlockDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final affordable = coins >= item.price;
     final adReady = AdScope.of(context).rewardedReady;
-    return AlertDialog(
-      title: Text('Unlock ${item.name}?'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            height: 140,
-            child: _Thumbnail(
-                look: Look(items: {item.slot: item.id}), slot: item.slot),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.monetization_on, color: Color(0xFFFFC107)),
-              const SizedBox(width: 4),
-              Text('${item.price}',
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.w900)),
-            ],
-          ),
-          if (!affordable)
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Text('Win fashion shows to earn more coins!',
-                  style: TextStyle(color: Colors.redAccent)),
+    return Dialog(
+      insetPadding: const EdgeInsets.all(kMargin),
+      child: Padding(
+        padding: const EdgeInsets.all(kMargin),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(item.name, style: Txt.lead()),
+            const SizedBox(height: 4),
+            Text(
+              affordable
+                  ? 'Unlock it for ${item.price} coins. You have '
+                      '${formatCoins(coins)}.'
+                  : 'It costs ${item.price} coins and you have '
+                      '${formatCoins(coins)}. Win a show to earn more.',
+              style: Txt.body(),
             ),
-          if (adReady)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: OutlinedButton.icon(
-                onPressed: () => Navigator.pop(context, _Unlock.ad),
-                icon: const Icon(Icons.ondemand_video),
-                label: const Text('Watch ad to unlock free'),
-              ),
+            const SizedBox(height: 16),
+            Container(
+              height: 160,
+              color: Palette.raised,
+              padding: const EdgeInsets.all(8),
+              child: _Thumbnail(
+                  look: Look(items: {item.slot: item.id}), slot: item.slot),
             ),
-        ],
-      ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Not now')),
-        FilledButton(
-          onPressed:
-              affordable ? () => Navigator.pop(context, _Unlock.coins) : null,
-          child: const Text('Unlock'),
+            const SizedBox(height: 20),
+            PrimaryButton(
+              label: 'Unlock for ${item.price} coins',
+              onPressed: affordable
+                  ? () => Navigator.pop(context, _Unlock.coins)
+                  : null,
+            ),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 24,
+              children: [
+                if (adReady)
+                  TextLink('Watch an ad to unlock',
+                      onTap: () => Navigator.pop(context, _Unlock.ad)),
+                TextLink('Not now', onTap: () => Navigator.pop(context)),
+              ],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

@@ -1,125 +1,118 @@
 import 'package:flutter/material.dart';
 
-import '../data/challenges.dart';
 import '../ads/ad_service.dart';
+import '../data/challenges.dart';
 import '../state/game_state.dart';
+import '../theme/tokens.dart';
 import '../widgets/common.dart';
 import 'studio_screen.dart';
 
+/// The season's shows as a running order: one size of type, the reward
+/// right-aligned, shows still to come set in the soft ink.
 class ChallengeSelectScreen extends StatelessWidget {
   const ChallengeSelectScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final game = GameScope.of(context);
+    final open = challenges.where((c) => game.level >= c.unlockLevel).toList();
+    final later = challenges.where((c) => game.level < c.unlockLevel).toList();
+    var i = 0;
     return Scaffold(
-      backgroundColor: StudioBackground.bottomColor,
       bottomNavigationBar: const BannerSlot(),
-      appBar: AppBar(
-        title: const Text('Fashion Shows',
-            style: TextStyle(fontWeight: FontWeight.w900)),
-        backgroundColor: Colors.transparent,
-        actions: const [CoinChip(), SizedBox(width: 12)],
-      ),
-      extendBodyBehindAppBar: true,
-      body: StudioBackground(
-        child: SafeArea(
-          child: ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: challenges.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, i) {
-              final c = challenges[i];
-              final locked = game.level < c.unlockLevel;
-              return _ChallengeCard(
-                challenge: c,
-                locked: locked,
-                onTap: locked
-                    ? () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content:
-                            Text('Reach level ${c.unlockLevel} to unlock!')))
-                    : () => Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
+      body: SafeArea(
+        child: Column(
+          children: [
+            const TopBar(title: 'Fashion shows'),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(kMargin, 8, kMargin, 32),
+                children: [
+                  Entrance(
+                    index: i++,
+                    child: Text('Pick tonight’s show', style: Txt.head()),
+                  ),
+                  const SizedBox(height: 8),
+                  Entrance(
+                    index: i++,
+                    child: Text(
+                      'Each show has a theme. The judges score how well your '
+                      'look fits it, how complete it is, and the makeup.',
+                      style: Txt.body(),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  for (final c in open)
+                    Entrance(
+                      index: i++,
+                      child: _ShowRow(
+                        challenge: c,
+                        onTap: () => Navigator.of(context).pushReplacement(
+                          MaterialPageRoute<void>(
                               builder: (_) => StudioScreen(challenge: c)),
                         ),
-              );
-            },
-          ),
+                      ),
+                    ),
+                  if (later.isNotEmpty) ...[
+                    const SizedBox(height: 40),
+                    Text('Coming up', style: Txt.lead()),
+                    const SizedBox(height: 12),
+                    for (final c in later)
+                      _ShowRow(
+                        challenge: c,
+                        onTap: () =>
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text('${c.title} opens at level '
+                                    '${c.unlockLevel}.'))),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _ChallengeCard extends StatelessWidget {
-  const _ChallengeCard({
-    required this.challenge,
-    required this.locked,
-    required this.onTap,
-  });
+class _ShowRow extends StatelessWidget {
+  const _ShowRow({required this.challenge, required this.onTap});
 
   final Challenge challenge;
-  final bool locked;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      borderRadius: BorderRadius.circular(20),
-      clipBehavior: Clip.antiAlias,
-      elevation: 3,
-      child: Ink(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: locked
-                ? [Colors.grey.shade500, Colors.grey.shade400]
-                : challenge.gradient,
-          ),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: Colors.white.withAlpha(60),
-                  child: Icon(locked ? Icons.lock : challenge.icon,
-                      color: Colors.white, size: 30),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(challenge.title,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w900)),
-                      const SizedBox(height: 2),
-                      Text(
-                        locked
-                            ? 'Unlocks at level ${challenge.unlockLevel}'
-                            : challenge.brief,
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 13),
-                      ),
-                    ],
+    final game = GameScope.of(context);
+    final locked = game.level < challenge.unlockLevel;
+    final ink = locked ? Palette.muted : Palette.ink;
+    return Semantics(
+      button: true,
+      child: Pressable(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Expanded(child: Text(challenge.title, style: Txt.lead(ink))),
+                  const SizedBox(width: 12),
+                  Text(
+                    locked
+                        ? 'Level ${challenge.unlockLevel}'
+                        : '${challenge.reward} coins',
+                    style: Txt.small(ink).copyWith(fontFeatures: Txt.tabular),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Column(
-                  children: [
-                    const Icon(Icons.monetization_on, color: Color(0xFFFFE082)),
-                    Text('${challenge.reward}',
-                        style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.w900)),
-                  ],
-                ),
-              ],
-            ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(challenge.brief, style: Txt.small()),
+            ],
           ),
         ),
       ),

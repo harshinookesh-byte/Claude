@@ -93,3 +93,19 @@ Consent (GDPR/UMP) is requested before the SDK starts. On web and desktop the ap
    section), and set up a GDPR message in AdMob > Privacy & messaging.
 
 Android minSdk is 23, as required by the plugin.
+
+## Design
+
+The UI follows the [taste-skill](https://github.com/leonxlnx/taste-skill) house rules (installed in
+`.claude/skills/`, MIT). Direction dealt by its `draw.mjs`: **The pinned poster** — palette
+*Burgundy and bubblegum*, type *Hanken Grotesk* (bundled in `assets/fonts`, OFL).
+
+- Tokens live in `lib/theme/tokens.dart`; components never use raw colours.
+- One ground, one tone-stepped surface, one accent (the action and the selected state).
+- Five type sizes; two weights (400/500); no bold, no tracked capitals, no monospace.
+- No gradients, shadows, glass, glows, pill badges or icon-card rows. Square corners throughout.
+- The model holds still while the outfit changes (studio crossfade); the show's name stays pinned
+  while each model walks; the gallery is one frame whose contents change; the show list is a
+  running order at one type size.
+- Every control scales slightly on press; screens enter in reading order; all motion respects
+  the system "reduce motion" setting.

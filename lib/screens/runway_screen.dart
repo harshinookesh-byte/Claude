@@ -8,6 +8,7 @@ import '../data/challenges.dart';
 import '../logic/scoring.dart';
 import '../models/look.dart';
 import '../state/game_state.dart';
+import '../theme/tokens.dart';
 import '../widgets/common.dart';
 
 enum _Stage { playerWalk, rivalWalk, judging, result }
@@ -116,14 +117,14 @@ class _RunwayScreenState extends State<RunwayScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A0B2E),
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _skip,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            const _RunwayBackdrop(),
+            if (_stage == _Stage.playerWalk || _stage == _Stage.rivalWalk)
+              const _RunwayBackdrop(),
             SafeArea(
               child: switch (_stage) {
                 _Stage.playerWalk => _walkView(widget.look, 'You'),
@@ -131,7 +132,7 @@ class _RunwayScreenState extends State<RunwayScreen>
                 _Stage.judging || _Stage.result => _resultsView(),
               },
             ),
-            if (_stage == _Stage.result && _won)
+            if (_stage == _Stage.result && _won && !reduceMotion(context))
               IgnorePointer(
                 child: AnimatedBuilder(
                   animation: _confetti,
@@ -145,49 +146,57 @@ class _RunwayScreenState extends State<RunwayScreen>
     );
   }
 
+  /// The show's name stays pinned while each model walks beneath it.
   Widget _walkView(Look look, String name) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 12),
-        Text(widget.challenge.title.toUpperCase(),
-            style: const TextStyle(
-                color: Color(0xFFFFD54F),
-                fontWeight: FontWeight.w900,
-                letterSpacing: 3)),
-        Text(name,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.w900)),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(kMargin, 16, kMargin, 0),
+          child:
+              Text(widget.challenge.title, maxLines: 2, style: Txt.display()),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(kMargin, 8, kMargin, 0),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            layoutBuilder: (current, previous) => Stack(
+              alignment: Alignment.centerLeft,
+              children: [...previous, if (current != null) current],
+            ),
+            child: Text(
+              name == 'You' ? 'You walk first' : '$name walks next',
+              key: ValueKey(name),
+              style: Txt.lead(),
+            ),
+          ),
+        ),
         Expanded(
           child: AnimatedBuilder(
             animation: _walk,
             builder: (context, child) {
-              final t = Curves.easeOut.transform(_walk.value);
+              final t = reduceMotion(context)
+                  ? 1.0
+                  : Curves.easeOut.transform(_walk.value);
               // Walk towards the camera with a little sway.
-              final sway = math.sin(_walk.value * math.pi * 6) * 0.02;
+              final sway = reduceMotion(context)
+                  ? 0.0
+                  : math.sin(_walk.value * math.pi * 6) * 0.02;
               return Align(
-                alignment: Alignment(sway, -0.9 + 0.9 * t),
+                alignment: Alignment(sway, -1 + 1.0 * t),
                 child: FractionallySizedBox(
-                  heightFactor: 0.45 + 0.5 * t,
+                  heightFactor: 0.5 + 0.48 * t,
                   child: child,
                 ),
               );
             },
-            child: ModelView(look: look, showStage: false),
+            child: ModelView(look: look, showFloor: false),
           ),
         ),
-        AnimatedBuilder(
-          animation: _walk,
-          builder: (_, __) => Opacity(
-            // Camera flashes.
-            opacity: (math.sin(_walk.value * 40) > 0.85) ? 1 : 0,
-            child: const Icon(Icons.flash_on, color: Colors.white, size: 36),
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.only(bottom: 12),
-          child: Text('Tap to skip', style: TextStyle(color: Colors.white38)),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(kMargin, 8, kMargin, 12),
+          child: Text('Tap to skip',
+              textAlign: TextAlign.center, style: Txt.small()),
         ),
       ],
     );
@@ -195,24 +204,32 @@ class _RunwayScreenState extends State<RunwayScreen>
 
   Widget _resultsView() {
     final done = _stage == _Stage.result;
+    final ads = AdScope.of(context);
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(kMargin, 16, kMargin, 12),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            done
-                ? (_won ? 'YOU WIN!' : '$_rivalName wins!')
-                : 'The judges are scoring...',
-            style: TextStyle(
-              color: done && _won ? const Color(0xFFFFD54F) : Colors.white,
-              fontSize: done ? 34 : 22,
-              fontWeight: FontWeight.w900,
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            layoutBuilder: (current, previous) => Stack(
+              alignment: Alignment.centerLeft,
+              children: [...previous, if (current != null) current],
+            ),
+            child: Text(
+              done
+                  ? (_won ? 'You win' : '$_rivalName wins')
+                  : 'The judges are scoring',
+              key: ValueKey(done),
+              style: Txt.head(),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
+          Text(widget.challenge.title, style: Txt.small()),
+          const SizedBox(height: 16),
           Expanded(
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
                   child: _Contestant(
@@ -222,14 +239,7 @@ class _RunwayScreenState extends State<RunwayScreen>
                     highlight: done && _won,
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 120),
-                  child: Text('VS',
-                      style: TextStyle(
-                          color: Color(0xFFFF4FA3),
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900)),
-                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _Contestant(
                     name: _rivalName,
@@ -244,67 +254,45 @@ class _RunwayScreenState extends State<RunwayScreen>
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: !done
-                ? const SizedBox(height: 120)
+                ? const SizedBox(height: 148)
                 : Column(
                     key: const ValueKey('done'),
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.monetization_on,
-                              color: Color(0xFFFFC107)),
-                          const SizedBox(width: 6),
-                          Text('+$_earned coins',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w800)),
+                          Expanded(
+                            child: Text('$_earned coins added',
+                                style: Txt.lead()
+                                    .copyWith(fontFeatures: Txt.tabular)),
+                          ),
+                          if (!_doubled && ads.rewardedReady)
+                            Flexible(
+                              child: TextLink('Double them with an ad',
+                                  onTap: _doubleCoins),
+                            ),
                         ],
                       ),
-                      if (!_doubled && AdScope.of(context).rewardedReady)
-                        TextButton.icon(
-                          style: TextButton.styleFrom(
-                              foregroundColor: const Color(0xFFFFD54F)),
-                          onPressed: _doubleCoins,
-                          icon: const Icon(Icons.ondemand_video),
-                          label: const Text('Watch ad to double coins'),
-                        ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: const BorderSide(color: Colors.white54),
-                                minimumSize: const Size.fromHeight(52),
-                                shape: const StadiumBorder(),
-                              ),
-                              onPressed: _saved
-                                  ? null
-                                  : () {
-                                      GameScope.read(context).saveToGallery(
-                                        widget.look,
-                                        title: widget.challenge.title,
-                                        score: _playerScore.total,
-                                      );
-                                      setState(() => _saved = true);
-                                    },
-                              icon: Icon(
-                                  _saved ? Icons.check : Icons.bookmark_add),
-                              label: Text(_saved ? 'Saved' : 'Save Look'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: GradientButton(
-                              label: 'CONTINUE',
-                              height: 52,
-                              onPressed: _leaving ? null : _continue,
-                            ),
-                          ),
-                        ],
+                      PrimaryButton(
+                        label: 'Continue',
+                        onPressed: _leaving ? null : _continue,
+                      ),
+                      Center(
+                        child: TextLink(
+                          _saved ? 'Saved to your looks' : 'Save this look',
+                          onTap: _saved
+                              ? null
+                              : () {
+                                  GameScope.read(context).saveToGallery(
+                                    widget.look,
+                                    title: widget.challenge.title,
+                                    score: _playerScore.total,
+                                  );
+                                  setState(() => _saved = true);
+                                },
+                        ),
                       ),
                     ],
                   ),
@@ -332,65 +320,60 @@ class _Contestant extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 400),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: highlight ? const Color(0xFFFFD54F) : Colors.white12,
-                width: 3,
-              ),
-              color: Colors.white.withAlpha(highlight ? 30 : 12),
+    final fg = highlight ? Palette.accentInk : Palette.ink;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 400),
+      color: highlight ? Palette.accent : Palette.surface,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Txt.lead(fg)),
+          Expanded(child: ModelView(look: look, showFloor: false)),
+          const SizedBox(height: 8),
+          for (var i = 0; i < 3; i++)
+            _JudgeRow(
+              label: _judges[i],
+              mark: score.judgeMarks[i],
+              delay: Duration(milliseconds: 400 * i),
+              ink: fg,
+              track: highlight ? Palette.muted : Palette.raised,
             ),
-            padding: const EdgeInsets.all(6),
-            child: Column(
-              children: [
-                if (highlight)
-                  const Icon(Icons.emoji_events, color: Color(0xFFFFD54F)),
-                Expanded(child: ModelView(look: look, showStage: false)),
-                Text(name,
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w800)),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        for (var i = 0; i < 3; i++)
-          _JudgeRow(
-            label: _judges[i],
-            mark: score.judgeMarks[i],
-            delay: Duration(milliseconds: 400 * i),
-          ),
-        const SizedBox(height: 6),
-        TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: score.total.toDouble()),
-          duration: const Duration(milliseconds: 2000),
-          curve: Curves.easeOutCubic,
-          builder: (_, v, __) => Text(
-            '${v.round()}',
-            style: TextStyle(
-              color: highlight ? const Color(0xFFFFD54F) : Colors.white,
-              fontSize: 34,
-              fontWeight: FontWeight.w900,
+          const SizedBox(height: 4),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: score.total.toDouble()),
+            duration: reduceMotion(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 2000),
+            curve: Curves.easeOutCubic,
+            builder: (_, v, __) => Text(
+              '${v.round()}',
+              style: Txt.head(fg).copyWith(fontFeatures: Txt.tabular),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
 class _JudgeRow extends StatefulWidget {
-  const _JudgeRow(
-      {required this.label, required this.mark, required this.delay});
+  const _JudgeRow({
+    required this.label,
+    required this.mark,
+    required this.delay,
+    required this.ink,
+    required this.track,
+  });
 
   final String label;
   final int mark;
   final Duration delay;
+  final Color ink;
+  final Color track;
 
   @override
   State<_JudgeRow> createState() => _JudgeRowState();
@@ -417,37 +400,35 @@ class _JudgeRowState extends State<_JudgeRow> {
 
   @override
   Widget build(BuildContext context) {
-    final label = widget.label, mark = widget.mark;
+    final mark = widget.mark;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
           SizedBox(
-            width: 56,
-            child: Text(label,
-                style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            width: 60,
+            child: Text(widget.label, style: Txt.small(widget.ink)),
           ),
           Expanded(
             child: TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: _shown ? mark / 10 : 0),
               duration: const Duration(milliseconds: 900),
-              builder: (_, v, __) => ClipRRect(
-                borderRadius: BorderRadius.circular(6),
+              builder: (_, v, __) => SizedBox(
+                height: 8,
                 child: LinearProgressIndicator(
                   value: v,
-                  minHeight: 10,
-                  backgroundColor: Colors.white12,
-                  color: const Color(0xFFFF4FA3),
+                  color: widget.ink,
+                  backgroundColor: widget.track,
                 ),
               ),
             ),
           ),
           SizedBox(
-            width: 24,
+            width: 26,
             child: Text('$mark',
                 textAlign: TextAlign.end,
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w800)),
+                style:
+                    Txt.small(widget.ink).copyWith(fontFeatures: Txt.tabular)),
           ),
         ],
       ),
@@ -455,6 +436,8 @@ class _JudgeRowState extends State<_JudgeRow> {
   }
 }
 
+/// The runway: one flat shape a tone step above the ground, narrowing
+/// towards the back of the room.
 class _RunwayBackdrop extends StatelessWidget {
   const _RunwayBackdrop();
 
@@ -468,40 +451,13 @@ class _BackdropPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width, h = size.height;
-    // Runway in perspective.
     final runway = Path()
-      ..moveTo(w * 0.42, h * 0.18)
-      ..lineTo(w * 0.58, h * 0.18)
-      ..lineTo(w * 0.95, h)
-      ..lineTo(w * 0.05, h)
+      ..moveTo(w * 0.40, h * 0.30)
+      ..lineTo(w * 0.60, h * 0.30)
+      ..lineTo(w * 0.98, h)
+      ..lineTo(w * 0.02, h)
       ..close();
-    canvas.drawPath(
-      runway,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF3B1F5C), Color(0xFF8E2C6E)],
-        ).createShader(Offset.zero & size),
-    );
-    // Spotlights.
-    for (final x in [0.15, 0.85]) {
-      final beam = Path()
-        ..moveTo(w * x, 0)
-        ..lineTo(w * 0.5 - 60, h * 0.85)
-        ..lineTo(w * 0.5 + 60, h * 0.85)
-        ..close();
-      canvas.drawPath(beam, Paint()..color = Colors.white.withAlpha(18));
-    }
-    // Audience lights.
-    final rnd = math.Random(3);
-    for (var i = 0; i < 60; i++) {
-      canvas.drawCircle(
-        Offset(rnd.nextDouble() * w, h * (0.2 + rnd.nextDouble() * 0.8)),
-        1 + rnd.nextDouble() * 1.5,
-        Paint()..color = Colors.white.withAlpha(40 + rnd.nextInt(80)),
-      );
-    }
+    canvas.drawPath(runway, Paint()..color = Palette.surface);
   }
 
   @override
@@ -513,18 +469,12 @@ class _ConfettiPainter extends CustomPainter {
 
   final double t;
 
-  static const _colors = [
-    Color(0xFFFF4FA3),
-    Color(0xFFFFD54F),
-    Color(0xFF7C4DFF),
-    Color(0xFF00E5FF),
-    Color(0xFF76FF03),
-  ];
+  static const _colors = [Palette.ink, Palette.muted];
 
   @override
   void paint(Canvas canvas, Size size) {
     final rnd = math.Random(42);
-    for (var i = 0; i < 80; i++) {
+    for (var i = 0; i < 60; i++) {
       final speed = 0.6 + rnd.nextDouble();
       final x =
           rnd.nextDouble() * size.width + math.sin((t + i) * math.pi * 2) * 12;
