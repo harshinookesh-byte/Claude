@@ -12,7 +12,8 @@ class GalleryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final game = GameScope.of(context);
     return Scaffold(
-      bottomNavigationBar: AdScope.of(context).banner(),
+      backgroundColor: StudioBackground.bottomColor,
+      bottomNavigationBar: const BannerSlot(),
       appBar: AppBar(
         title: const Text('My Looks',
             style: TextStyle(fontWeight: FontWeight.w900)),

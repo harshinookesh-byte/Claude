@@ -173,6 +173,10 @@ class GradientButton extends StatelessWidget {
 class StudioBackground extends StatelessWidget {
   const StudioBackground({super.key, required this.child, this.colors});
 
+  /// Colour at the bottom of the default gradient; screens use it behind the
+  /// banner / navigation-bar area so it blends with the page.
+  static const bottomColor = Color(0xFFE9D7FF);
+
   final Widget child;
   final List<Color>? colors;
 
@@ -183,7 +187,7 @@ class StudioBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: colors ?? const [Color(0xFFFFE1F0), Color(0xFFE9D7FF)],
+          colors: colors ?? const [Color(0xFFFFE1F0), bottomColor],
         ),
       ),
       child: child,

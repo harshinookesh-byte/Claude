@@ -15,7 +15,8 @@ class HomeScreen extends StatelessWidget {
     final game = GameScope.of(context);
     final ads = AdScope.of(context);
     return Scaffold(
-      bottomNavigationBar: ads.banner(),
+      backgroundColor: StudioBackground.bottomColor,
+      bottomNavigationBar: const BannerSlot(),
       body: StudioBackground(
         child: SafeArea(
           child: Padding(

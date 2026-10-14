@@ -235,12 +235,31 @@ class _BannerState extends State<_Banner> {
   Widget build(BuildContext context) {
     final ad = _ad;
     if (!_loaded || ad == null) return const SizedBox.shrink();
+    return SizedBox(
+      width: ad.size.width.toDouble(),
+      height: ad.size.height.toDouble(),
+      child: AdWidget(ad: ad),
+    );
+  }
+}
+
+/// A screen's bottom bar: the banner (if any) above the system navigation
+/// bar.
+///
+/// A Scaffold gives its `bottomNavigationBar` the bottom inset and removes it
+/// from the body, so this slot must reserve the inset even when no banner is
+/// loaded - otherwise the page's bottom buttons slide under the system
+/// navigation buttons.
+class BannerSlot extends StatelessWidget {
+  const BannerSlot({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      child: SizedBox(
-        width: ad.size.width.toDouble(),
-        height: ad.size.height.toDouble(),
-        child: AdWidget(ad: ad),
+      child: Center(
+        heightFactor: 1,
+        child: AdScope.of(context).banner(),
       ),
     );
   }
