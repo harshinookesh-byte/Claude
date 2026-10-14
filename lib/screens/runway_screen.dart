@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../ads/ad_service.dart';
 import '../data/challenges.dart';
 import '../logic/scoring.dart';
 import '../models/look.dart';
@@ -38,6 +40,8 @@ class _RunwayScreenState extends State<RunwayScreen>
   _Stage _stage = _Stage.playerWalk;
   int _earned = 0;
   bool _saved = false;
+  bool _doubled = false;
+  bool _leaving = false;
 
   bool get _won => _playerScore.total >= _rivalScore.total;
 
@@ -77,6 +81,23 @@ class _RunwayScreenState extends State<RunwayScreen>
       _stage = _Stage.result;
     });
     if (_won) _confetti.repeat();
+  }
+
+  Future<void> _doubleCoins() async {
+    final earned = await AdScope.read(context).showRewarded();
+    if (!earned || !mounted) return;
+    GameScope.read(context).addCoins(_earned);
+    setState(() {
+      _earned *= 2;
+      _doubled = true;
+    });
+  }
+
+  Future<void> _continue() async {
+    setState(() => _leaving = true);
+    // Interstitials only ever appear between shows, and are paced.
+    await AdScope.read(context).onShowFinished();
+    if (mounted) Navigator.of(context).pop();
   }
 
   void _skip() {
@@ -241,6 +262,14 @@ class _RunwayScreenState extends State<RunwayScreen>
                                   fontWeight: FontWeight.w800)),
                         ],
                       ),
+                      if (!_doubled && AdScope.of(context).rewardedReady)
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFFFFD54F)),
+                          onPressed: _doubleCoins,
+                          icon: const Icon(Icons.ondemand_video),
+                          label: const Text('Watch ad to double coins'),
+                        ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -272,7 +301,7 @@ class _RunwayScreenState extends State<RunwayScreen>
                             child: GradientButton(
                               label: 'CONTINUE',
                               height: 52,
-                              onPressed: () => Navigator.of(context).pop(),
+                              onPressed: _leaving ? null : _continue,
                             ),
                           ),
                         ],
@@ -355,7 +384,7 @@ class _Contestant extends StatelessWidget {
   }
 }
 
-class _JudgeRow extends StatelessWidget {
+class _JudgeRow extends StatefulWidget {
   const _JudgeRow(
       {required this.label, required this.mark, required this.delay});
 
@@ -364,7 +393,31 @@ class _JudgeRow extends StatelessWidget {
   final Duration delay;
 
   @override
+  State<_JudgeRow> createState() => _JudgeRowState();
+}
+
+class _JudgeRowState extends State<_JudgeRow> {
+  // Started once, so rebuilds (e.g. an ad loading) don't restart the reveal.
+  late final Timer _reveal = Timer(widget.delay, () {
+    if (mounted) setState(() => _shown = true);
+  });
+  bool _shown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _reveal;
+  }
+
+  @override
+  void dispose() {
+    _reveal.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final label = widget.label, mark = widget.mark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -375,23 +428,16 @@ class _JudgeRow extends StatelessWidget {
                 style: const TextStyle(color: Colors.white70, fontSize: 12)),
           ),
           Expanded(
-            child: FutureBuilder(
-              future: Future<void>.delayed(delay),
-              builder: (context, snap) => TweenAnimationBuilder<double>(
-                tween: Tween(
-                    begin: 0,
-                    end: snap.connectionState == ConnectionState.done
-                        ? mark / 10
-                        : 0),
-                duration: const Duration(milliseconds: 900),
-                builder: (_, v, __) => ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: v,
-                    minHeight: 10,
-                    backgroundColor: Colors.white12,
-                    color: const Color(0xFFFF4FA3),
-                  ),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: _shown ? mark / 10 : 0),
+              duration: const Duration(milliseconds: 900),
+              builder: (_, v, __) => ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: v,
+                  minHeight: 10,
+                  backgroundColor: Colors.white12,
+                  color: const Color(0xFFFF4FA3),
                 ),
               ),
             ),

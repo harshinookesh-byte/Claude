@@ -62,3 +62,34 @@ flutter build apk --release
 The Android build uses Gradle 8.10.2, AGP 8.7.3 and Kotlin 2.1.0, so it works with JDK 17 or 21.
 The release APK is signed with the debug key (fine for sideloading). Set up your own
 signing key before publishing to Google Play.
+
+## Ads (AdMob)
+
+Integrated with [`google_mobile_ads`](https://pub.dev/packages/google_mobile_ads) (`lib/ads/`):
+
+| Format | Where |
+|---|---|
+| **Banner** (anchored adaptive) | Bottom of Home, Fashion Shows list and Gallery. Not on the studio or runway, to keep gameplay uncluttered. |
+| **Interstitial** | When leaving a fashion show result, at most every 2nd show and never within 90 s of the last one. |
+| **Rewarded** | Home "Free Coins" (+100), "Watch ad to double coins" on the show result, and "Watch ad to unlock free" in the unlock dialog. A reward is only granted if the video is watched to the end. |
+
+Consent (GDPR/UMP) is requested before the SDK starts. On web and desktop the app uses
+`NoAdService`, so nothing changes there.
+
+**Before publishing**, replace Google's test ids with your own from the AdMob console:
+
+1. App id: `android/app/src/main/AndroidManifest.xml` (`com.google.android.gms.ads.APPLICATION_ID`)
+   and `ios/Runner/Info.plist` (`GADApplicationIdentifier`).
+2. Ad unit ids: pass them at build time (defaults are test units, see `lib/ads/ad_ids.dart`):
+
+   ```bash
+   flutter build apk --release \
+     --dart-define=ADMOB_BANNER_ANDROID=ca-app-pub-XXXX/YYYY \
+     --dart-define=ADMOB_INTERSTITIAL_ANDROID=ca-app-pub-XXXX/YYYY \
+     --dart-define=ADMOB_REWARDED_ANDROID=ca-app-pub-XXXX/YYYY
+   ```
+
+3. In Play Console, declare that the app uses the advertising ID and shows ads (Data safety
+   section), and set up a GDPR message in AdMob > Privacy & messaging.
+
+Android minSdk is 23, as required by the plugin.

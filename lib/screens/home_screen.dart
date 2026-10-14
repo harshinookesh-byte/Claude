@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../ads/ad_service.dart';
 import '../state/game_state.dart';
 import '../widgets/common.dart';
 import 'challenge_select_screen.dart';
@@ -12,7 +13,9 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final game = GameScope.of(context);
+    final ads = AdScope.of(context);
     return Scaffold(
+      bottomNavigationBar: ads.banner(),
       body: StudioBackground(
         child: SafeArea(
           child: Padding(
@@ -98,7 +101,7 @@ class HomeScreen extends StatelessWidget {
                                 builder: (_) => const StudioScreen())),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: _MenuTile(
                         icon: Icons.photo_library,
@@ -109,7 +112,7 @@ class HomeScreen extends StatelessWidget {
                                 builder: (_) => const GalleryScreen())),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: _MenuTile(
                         icon: Icons.card_giftcard,
@@ -129,6 +132,18 @@ class HomeScreen extends StatelessWidget {
                             : null,
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _MenuTile(
+                        icon: Icons.ondemand_video,
+                        label: 'Free Coins',
+                        color: const Color(0xFF26A69A),
+                        badge: ads.rewardedReady,
+                        onTap: ads.rewardedReady
+                            ? () => _watchForCoins(context)
+                            : null,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -138,6 +153,14 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> _watchForCoins(BuildContext context) async {
+  final earned = await AdScope.read(context).showRewarded();
+  if (!earned || !context.mounted) return;
+  GameScope.read(context).addCoins(GameState.adCoins);
+  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Thanks for watching! +${GameState.adCoins} coins')));
 }
 
 class _Stat extends StatelessWidget {
@@ -204,7 +227,7 @@ class _MenuTile extends StatelessWidget {
               const SizedBox(height: 4),
               Text(label,
                   style: TextStyle(
-                      fontWeight: FontWeight.w800, color: color, fontSize: 13)),
+                      fontWeight: FontWeight.w800, color: color, fontSize: 12)),
             ],
           ),
         ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'ads/ad_service.dart';
 import 'screens/home_screen.dart';
 import 'state/game_state.dart';
 
@@ -10,34 +11,41 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   final prefs = await SharedPreferences.getInstance();
-  runApp(FashionStarApp(state: GameState(prefs)));
+  final ads = adsSupported ? AdMobService() : NoAdService();
+  runApp(FashionStarApp(state: GameState(prefs), ads: ads));
+  // Consent + SDK start-up runs in the background; ads appear once ready.
+  if (ads is AdMobService) ads.init();
 }
 
 class FashionStarApp extends StatelessWidget {
-  const FashionStarApp({super.key, required this.state});
+  const FashionStarApp({super.key, required this.state, required this.ads});
 
   final GameState state;
+  final AdService ads;
 
   @override
   Widget build(BuildContext context) {
-    return GameScope(
-      state: state,
-      child: MaterialApp(
-        title: 'Fashion Star',
-        debugShowCheckedModeBanner: false,
-        // Let the horizontal item trays scroll with a mouse/trackpad drag too
-        // (web and desktop); touch already works.
-        scrollBehavior: const MaterialScrollBehavior().copyWith(
-          dragDevices: PointerDeviceKind.values.toSet(),
-        ),
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFFFF4FA3),
-            primary: const Color(0xFFE0388E),
+    return AdScope(
+      ads: ads,
+      child: GameScope(
+        state: state,
+        child: MaterialApp(
+          title: 'Fashion Star',
+          debugShowCheckedModeBanner: false,
+          // Let the horizontal item trays scroll with a mouse/trackpad drag too
+          // (web and desktop); touch already works.
+          scrollBehavior: const MaterialScrollBehavior().copyWith(
+            dragDevices: PointerDeviceKind.values.toSet(),
           ),
-          useMaterial3: true,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFFFF4FA3),
+              primary: const Color(0xFFE0388E),
+            ),
+            useMaterial3: true,
+          ),
+          home: const HomeScreen(),
         ),
-        home: const HomeScreen(),
       ),
     );
   }

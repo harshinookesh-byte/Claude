@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../ads/ad_service.dart';
 import '../data/catalog.dart';
 import '../data/challenges.dart';
 import '../models/fashion_item.dart';
@@ -84,12 +85,21 @@ class _StudioScreenState extends State<StudioScreen> {
   Future<void> _tapItem(FashionItem item) async {
     final game = GameScope.read(context);
     if (!game.owns(item)) {
-      final ok = await showDialog<bool>(
+      final choice = await showDialog<_Unlock>(
         context: context,
         builder: (ctx) => _UnlockDialog(item: item, coins: game.coins),
       );
-      if (ok != true || !mounted) return;
-      if (!game.buy(item)) {
+      if (choice == null || !mounted) return;
+      if (choice == _Unlock.ad) {
+        final earned = await AdScope.read(context).showRewarded();
+        if (!mounted) return;
+        if (!earned) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Watch the whole video to unlock the item.')));
+          return;
+        }
+        game.unlockFree(item);
+      } else if (!game.buy(item)) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Not enough coins - win a show!')));
         return;
@@ -646,6 +656,8 @@ class _RoundAction extends StatelessWidget {
   }
 }
 
+enum _Unlock { coins, ad }
+
 class _UnlockDialog extends StatelessWidget {
   const _UnlockDialog({required this.item, required this.coins});
 
@@ -655,6 +667,7 @@ class _UnlockDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final affordable = coins >= item.price;
+    final adReady = AdScope.of(context).rewardedReady;
     return AlertDialog(
       title: Text('Unlock ${item.name}?'),
       content: Column(
@@ -682,14 +695,24 @@ class _UnlockDialog extends StatelessWidget {
               child: Text('Win fashion shows to earn more coins!',
                   style: TextStyle(color: Colors.redAccent)),
             ),
+          if (adReady)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.pop(context, _Unlock.ad),
+                icon: const Icon(Icons.ondemand_video),
+                label: const Text('Watch ad to unlock free'),
+              ),
+            ),
         ],
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(context),
             child: const Text('Not now')),
         FilledButton(
-          onPressed: affordable ? () => Navigator.pop(context, true) : null,
+          onPressed:
+              affordable ? () => Navigator.pop(context, _Unlock.coins) : null,
           child: const Text('Unlock'),
         ),
       ],

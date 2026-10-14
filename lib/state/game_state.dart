@@ -65,6 +65,21 @@ class GameState extends ChangeNotifier {
     return true;
   }
 
+  /// Coins granted for watching a rewarded video from the home screen.
+  static const adCoins = 100;
+
+  void addCoins(int amount) {
+    coins += amount;
+    _changed();
+  }
+
+  /// Unlocks [item] without spending coins (rewarded-ad unlock).
+  void unlockFree(FashionItem item) {
+    if (owns(item)) return;
+    _owned.add(item.id);
+    _changed();
+  }
+
   void setLook(Look look) {
     current = look;
     _changed(persist: false);

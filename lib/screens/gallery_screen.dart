@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/look.dart';
+import '../ads/ad_service.dart';
 import '../state/game_state.dart';
 import '../widgets/common.dart';
 
@@ -11,6 +12,7 @@ class GalleryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final game = GameScope.of(context);
     return Scaffold(
+      bottomNavigationBar: AdScope.of(context).banner(),
       appBar: AppBar(
         title: const Text('My Looks',
             style: TextStyle(fontWeight: FontWeight.w900)),

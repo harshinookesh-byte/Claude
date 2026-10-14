@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/challenges.dart';
+import '../ads/ad_service.dart';
 import '../state/game_state.dart';
 import '../widgets/common.dart';
 import 'studio_screen.dart';
@@ -12,6 +13,7 @@ class ChallengeSelectScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final game = GameScope.of(context);
     return Scaffold(
+      bottomNavigationBar: AdScope.of(context).banner(),
       appBar: AppBar(
         title: const Text('Fashion Shows',
             style: TextStyle(fontWeight: FontWeight.w900)),
