@@ -49,13 +49,30 @@ void main() {
     const skin = Makeup();
     final tee = itemsFor(Slot.top).firstWhere((i) => i.style == 'tee');
     final jeans = itemsFor(Slot.bottom).firstWhere((i) => i.style == 'jeans');
+    FashionItem pick(Slot slot, String style) =>
+        itemsFor(slot).firstWhere((i) => i.style == style);
     final looks = {
       'nothing': const Look(),
       'top only': const Look().toggle(tee),
       'bottom only': const Look().toggle(jeans),
+      'crop + mini': const Look()
+          .toggle(pick(Slot.top, 'crop'))
+          .toggle(pick(Slot.bottom, 'miniskirt')),
+      'cami + shorts': const Look()
+          .toggle(pick(Slot.top, 'tank'))
+          .toggle(pick(Slot.bottom, 'shorts')),
+      'choli + lehenga': const Look()
+          .toggle(pick(Slot.top, 'choli'))
+          .toggle(pick(Slot.bottom, 'lehengaskirt')),
+      'saree': const Look().toggle(pick(Slot.dress, 'saree')),
+      'strapless gown': const Look().toggle(pick(Slot.dress, 'gown')),
+      'mini dress': const Look().toggle(pick(Slot.dress, 'minidress')),
     };
-    // Hips, thigh, knee and chest/belly.
-    const spots = [(150, 320), (138, 400), (138, 480), (150, 230), (150, 280)];
+    const spots = [
+      (150, 320), (138, 400), (138, 480), // hips, thigh, knee
+      (150, 180), (150, 230), (150, 250), (150, 280), // chest to belly
+      (122, 172), (178, 172), // shoulders
+    ];
     for (final MapEntry(key: name, value: look) in looks.entries) {
       for (final (x, y) in spots) {
         final c = await pixel(look, x, y);
