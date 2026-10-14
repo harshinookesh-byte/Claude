@@ -34,4 +34,33 @@ void main() {
       expect(inside, greaterThan(0), reason: '${slot.name} thumbnail is empty');
     }
   });
+
+  test('model always wears a bottom and a top', () async {
+    Future<Color> pixel(Look look, int x, int y) async {
+      final rec = ui.PictureRecorder();
+      ModelPainter(look).paint(Canvas(rec), const Size(300, 600));
+      final img = await rec.endRecording().toImage(300, 600);
+      final d = (await img.toByteData())!;
+      final i = (y * 300 + x) * 4;
+      return Color.fromARGB(d.getUint8(i + 3), d.getUint8(i), d.getUint8(i + 1),
+          d.getUint8(i + 2));
+    }
+
+    const skin = Makeup();
+    final tee = itemsFor(Slot.top).firstWhere((i) => i.style == 'tee');
+    final jeans = itemsFor(Slot.bottom).firstWhere((i) => i.style == 'jeans');
+    final looks = {
+      'nothing': const Look(),
+      'top only': const Look().toggle(tee),
+      'bottom only': const Look().toggle(jeans),
+    };
+    // Hips, thigh, knee and chest/belly.
+    const spots = [(150, 320), (138, 400), (138, 480), (150, 230), (150, 280)];
+    for (final MapEntry(key: name, value: look) in looks.entries) {
+      for (final (x, y) in spots) {
+        final c = await pixel(look, x, y);
+        expect(c, isNot(skin.skinTone), reason: '$name: bare skin at ($x, $y)');
+      }
+    }
+  });
 }

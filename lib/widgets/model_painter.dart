@@ -15,6 +15,22 @@ class ModelPainter extends CustomPainter {
 
   static const fullBody = Rect.fromLTWH(0, 0, 300, 600);
 
+  /// Plain leggings and tee worn when the look has no bottom / top.
+  static const baseBottom = FashionItem(
+    id: 'base_bottom',
+    name: 'Base leggings',
+    slot: Slot.bottom,
+    style: 'leggings',
+    color: Color(0xFFB8B0C4),
+  );
+  static const baseTop = FashionItem(
+    id: 'base_top',
+    name: 'Base tee',
+    slot: Slot.top,
+    style: 'tee',
+    color: Color(0xFFF7F4FA),
+  );
+
   final Look look;
   final Rect focus;
 
@@ -37,8 +53,10 @@ class ModelPainter extends CustomPainter {
 
     final hair = _item(Slot.hair);
     final dress = _item(Slot.dress);
-    final top = _item(Slot.top);
-    final bottom = _item(Slot.bottom);
+    // The model is never shown undressed: without a dress, any missing top
+    // or bottom is filled with a plain base layer.
+    final bottom = _item(Slot.bottom) ?? (dress == null ? baseBottom : null);
+    final top = _item(Slot.top) ?? (dress == null ? baseTop : null);
     final shoes = _item(Slot.shoes);
     final garments = [bottom, top, dress].whereType<FashionItem>();
 
